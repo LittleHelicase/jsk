@@ -19,23 +19,43 @@ const base =
     // C: [['S', [['S', ['K', 'B']], 'S']], ['K', 'K']],
 
     K: 'T',
-    and: {p: {q: ['p', 'q', 'F']}},
-    or: {p: {q: ['p', 'T', 'q']}},
     not: 'C',
-    isZero: {n: [['n', ['K', 'F']], 'T']},
-    sub: {m: {n: ['n', 'pred', 'm']}},
-    leq: {m: {n: ['isZero', ['sub', 'm', 'n']]}},
-    eq: {m: {n: ['and', ['leq', 'm', 'n'], ['leq', 'n', 'm']]}},
     succ: ['S', 'B'],
-    pred: {n: {f: {x: ['n', {g: {h: ['h', ['g', 'f']]}}, ['K', 'x'], 'I']}}},
     zero: 'F',
     one: 'O',
+    and: {p: {q: ['p', 'q', 'F']}},
+    or: {p: {q: ['p', 'T', 'q']}},
+    isZero: {n: ['n', ['K', 'F'], 'T']},
+    sub: {m: {n: ['n', 'pred', 'm']}},
+    leq: {m: {n: ['isZero', ['sub', 'm', 'n']]}},
+    geq: {m: {n: ['isZero', ['sub', 'n', 'm']]}},
+    eq: {m: {n: ['and', ['leq', 'm', 'n'], ['geq', 'm', 'n']]}},
+    pred: {n: {f: {x: ['n', {g: {h: ['h', ['g', 'f']]}}, ['K', 'x'], 'I']}}},
     two: ['succ', 'one'],
     three: ['succ', 'two'],
     add: {m: {n: {f: {x: ['m', 'f', ['n', 'f', 'x']]}}}},
     mul: 'B',
     sq: 'two',
     fac: ['Y', {f: {n: ['isZero', 'n', 'one', ['mul', 'n', ['f', ['pred', 'n']]]]}}],
+    div1: {c: {n: {m: {f: {x:
+        [{d: ['isZero', 'd', ['zero', 'f', 'x'], ['f', ['c', 'd', 'm', 'f', 'x']]]},
+        ['sub', 'n', 'm']]
+    }}}}},
+    div: {n: ['Y', 'div1', ['succ', 'n']]},
+
+    // church pair
+    pair: {x: {y: {z: ['z', 'x', 'y']}}},
+    first: {p: ['p', 'T']},
+    second: {p: ['p', 'F']},
+
+    // cons list
+    nil: 'F',
+    isNil: {l: ['l', {h: {t: {d: 'F'}}}, 'T']},
+    cons: 'pair',
+    head: 'first',
+    tail: 'second',
+    at: {n: {l: ['head', ['n', 'tail', 'l']]}}
+
 }
 
 function numeral(n)
@@ -48,7 +68,7 @@ function numeral(n)
         case 3: return 'three'
     }
     let k = Math.floor(Math.sqrt(n))
-    let r = n % (k * k)
+    let r = n - k * k
     switch(r)
     {
         case 0: return ['sq', numeral(k)]
@@ -56,6 +76,17 @@ function numeral(n)
         case 2: return ['succ', ['succ', ['sq', numeral(k)]]]
     }
     return ['add', ['sq', numeral(k)], numeral(r)]
+}
+
+function list(l)
+{
+    return _.reduceRight(l, (t, i) =>
+    ['cons', i, t || 'nil'], null)
+}
+
+function at(n)
+{
+    return {l: _.range(n + 1).map(i => i == 0 ? 'l' : 'F')}
 }
 
 function arg(code)
@@ -78,7 +109,7 @@ function fn(arg, body)
 function size(code)
 {
     if(Array.isArray(code))
-        return 1 + _.sum(_.map(code, size))
+        return _.sum(_.map(code, size))
     else
         return 1
 }
@@ -128,51 +159,43 @@ function compile(code)
 
 function exec(code)
 {
-    if(Array.isArray(code))
+    if(!Array.isArray(code))
+        return code
+    while(true)
     {
-        let x = code[1]
-        if(typeof code[0] === 'function')
-            return exec(code[0](exec(x)))
+        while(Array.isArray(code[0]))
+            code = _.concat(code[0], code.slice(1))
+        switch(typeof code[0])
+        {
+            case 'function':
+                let fn = code[0]
+                let args = code.splice(1, fn.length).map(exec)
+                code[0] = fn.apply(null, args)
+                continue
+        }
         switch(code[0])
         {
-            case 'I': return exec(x)
-            case 'U': return exec([x, x])
-            case 'Y': return exec([x, ['Y', x]])
+            case 'I': code.shift(); continue
+            case 'U': code[0] = code[1]; continue
+            case 'Y': code[0] = code[1]; code[1] = ['Y', code[1]]; continue
+            case 'F': code.splice(0, 2); continue
+            case 'T': code.shift(); code.splice(1, 1); continue
+            case 'O': code.shift(); continue
+            case 'B': code.shift(); code.splice(1, 2, [code[1], code[2]]); continue
+            case 'C': code.shift(); let y = code[1]; code[1] = code[2]; code[2] = y; continue
+            case 'S': code.shift(); let z = code[2]; code[2] = [code[1], z]; code[1] = z; continue
         }
-        if(Array.isArray(code[0]))
+        switch(typeof code[0])
         {
-            let f = code[0][1]
-            switch(code[0][0])
-            {
-                case 'F': return exec(x)
-                case 'T': return exec(f)
-                case 'O': return exec([f, x])
-            }
-            if(Array.isArray(code[0][0]))
-            {
-                let g = code[0][0][1]
-                switch(code[0][0][0])
-                {
-                    case 'B': return exec([g, [f, x]])
-                    case 'C': return exec([[g, x], f])
-                    case 'S': return exec([[g, x], [f, x]])
-                }
-            }
+            case 'object':
+            case 'string':
+                code[0] = compile(code[0])
+                continue
         }
-        let f = exec(code[0])
-        if(!_.isEqual(f, code[0]))
-            return exec([f, code[1]])
-        // let arg = exec(code[1])
-        // if(!_.isEqual(arg, code[1]))
-        //     return exec([f, arg])
+        return code.length == 1 ? code[0] : code
     }
-    return code
 }
 
-let src = ['sub', numeral(125), ['fac', numeral(5)]]
-let bin = compile(src)
-
-console.log(JSON.stringify(src))
-console.log(JSON.stringify(bin))
-console.log(JSON.stringify(size(bin)))
-console.log(JSON.stringify(exec([[bin, n => n + 1], 0])))
+console.log(JSON.stringify(exec(['eq', ['fac', numeral(5)], numeral(120), true, false])))
+console.log(JSON.stringify(exec(['isNil', [numeral(9), 'tail', list(_.range(10))], true, false])))
+console.log(JSON.stringify(exec(['div', numeral(100), numeral(3), n => n+1, 0])))

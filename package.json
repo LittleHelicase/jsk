@@ -1,0 +1,23 @@
+{
+  "name": "jsk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "lodash": "^4.17.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vschmidt91/jsk.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vschmidt91/jsk/issues"
+  },
+  "homepage": "https://github.com/vschmidt91/jsk#readme"
+}
