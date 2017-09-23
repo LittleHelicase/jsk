@@ -6,10 +6,10 @@ const base =
 
     // uncomment to enable reductions (VERY slow):
 
-    I: ['S', 'K', 'K'],
-    F: ['K', 'I'],
-    B: ['S', ['K', 'S'], 'K'],
-    C: ['S', ['S', ['K', 'B'], 'S'], ['K', 'K']],
+    // I: ['S', 'K', 'K'],
+    // F: ['K', 'I'],
+    // B: ['S', ['K', 'S'], 'K'],
+    // C: ['S', ['S', ['K', 'B'], 'S'], ['K', 'K']],
 
     Y: {f: [
         {x: ['f', ['x', 'x']]},
@@ -73,9 +73,9 @@ function numeral(n)
     let h = Math.floor(n / 3)
     switch(n - 3 * h)
     {
-        case 0: return ['mul', 'three', numeral(h)]
-        case 1: return ['succ', ['mul', 'three', numeral(h)]]
-        case 2: return ['succ', ['succ', ['mul', 'three', numeral(h)]]]
+        case 0: return ['mul', numeral(h), 'three']
+        case 1: return ['succ', ['mul', numeral(h), 'three']]
+        case 2: return ['succ', ['succ', ['mul', numeral(h), 'three']]]
     }
 }
 
@@ -182,12 +182,6 @@ function exec(code)
                     code[0] = base[code[0]]
                     continue
                 }
-                let n = parseInt(code[0])
-                if(!isNaN(n))
-                {
-                    code[0] = numeral(n)
-                    continue
-                }
             case 'function':
                 let f = code.shift(), args
                 if(f in instructions)
@@ -217,6 +211,6 @@ function run(...code)
     console.log()
 }
 
-run('at', '7', list(_.range(10)))
-run('eq', ['fac', '5'], '120', true, false)
-run('div', '234', '23', n => n+1, 0)
+run('at', numeral(7), list(_.range(10)))
+run('eq', ['fac', numeral(5)], numeral(120), true, false)
+run('div', numeral(234), numeral(23), n => n+1, 0)
