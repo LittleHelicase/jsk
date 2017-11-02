@@ -4,6 +4,7 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
+    "@std/esm": "^0.12.5",
     "lodash": "^4.17.4"
   },
   "devDependencies": {},
@@ -19,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/vschmidt91/jsk/issues"
   },
-  "homepage": "https://github.com/vschmidt91/jsk#readme"
+  "homepage": "https://github.com/vschmidt91/jsk#readme",
+  "@std/esm": {
+    "debug": true
+  }
 }
